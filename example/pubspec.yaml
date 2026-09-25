@@ -1,0 +1,19 @@
+name: apneicare_ble_example
+description: Minimal demo for apneicare_ble
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  apneicare_ble:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
