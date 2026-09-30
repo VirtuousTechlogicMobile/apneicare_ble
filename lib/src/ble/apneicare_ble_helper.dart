@@ -14,13 +14,27 @@ class ApneicareBleHelper {
   // Add a static getter for easier access
   static ApneicareBleHelper get instance => _instance;
 
-  void Function(String level, String code, String message, [Map<String, dynamic>? data])? onLog;
+  void Function(
+    String level,
+    String code,
+    String message, [
+    Map<String, dynamic>? data,
+  ])?
+  onLog;
 
-  Future<void> _logEvent(String code, String message, [Map<String, dynamic>? data]) async {
+  Future<void> _logEvent(
+    String code,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) async {
     onLog?.call('event', code, message, data);
   }
 
-  Future<void> _logError(String code, String message, [Map<String, dynamic>? data]) async {
+  Future<void> _logError(
+    String code,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) async {
     onLog?.call('error', code, message, data);
   }
 
@@ -159,11 +173,15 @@ class ApneicareBleHelper {
       // _disconnectionController = StreamController<bool>.broadcast(); // Removed - using direct connection state monitoring
       print('BLE helper initialized');
       _logEvent(
-          'ble_helper_initialized', 'BLE helper initialized successfully');
+        'ble_helper_initialized',
+        'BLE helper initialized successfully',
+      );
     } else {
       print('BLE helper already initialized, skipping');
-      _logEvent('ble_helper_already_initialized',
-          'BLE helper already initialized, skipping');
+      _logEvent(
+        'ble_helper_already_initialized',
+        'BLE helper already initialized, skipping',
+      );
     }
   }
 
@@ -200,8 +218,10 @@ class ApneicareBleHelper {
       _errorController = StreamController<String>.broadcast();
     }
 
-    _logEvent('ble_prepared_for_reconnection',
-        'BLE helper prepared for reconnection attempt');
+    _logEvent(
+      'ble_prepared_for_reconnection',
+      'BLE helper prepared for reconnection attempt',
+    );
     print('🔄 BLE helper ready for reconnection');
   }
 
@@ -278,7 +298,8 @@ class ApneicareBleHelper {
 
       final scanDuration = DateTime.now().difference(startTime);
       print(
-          'Scan completed in ${scanDuration.inMilliseconds}ms. Found ${discoveredDevices.length} devices');
+        'Scan completed in ${scanDuration.inMilliseconds}ms. Found ${discoveredDevices.length} devices',
+      );
 
       await _logEvent('ble_scan_completed', 'Scan completed successfully', {
         'duration_ms': scanDuration.inMilliseconds,
@@ -310,10 +331,13 @@ class ApneicareBleHelper {
       for (final device in connected) {
         if (device.platformName.toLowerCase().contains('w628')) {
           await _logEvent(
-              'w628_already_connected', 'W628 found in connected devices', {
-            'device_name': device.platformName,
-            'device_id': device.remoteId.toString(),
-          });
+            'w628_already_connected',
+            'W628 found in connected devices',
+            {
+              'device_name': device.platformName,
+              'device_id': device.remoteId.toString(),
+            },
+          );
           return device;
         }
       }
@@ -322,8 +346,7 @@ class ApneicareBleHelper {
       final bonded = await FlutterBluePlus.bondedDevices;
       for (final device in bonded) {
         if (device.platformName.toLowerCase().contains('w628')) {
-          await _logEvent(
-              'w628_found_bonded', 'W628 found in bonded devices', {
+          await _logEvent('w628_found_bonded', 'W628 found in bonded devices', {
             'device_name': device.platformName,
             'device_id': device.remoteId.toString(),
           });
@@ -337,11 +360,14 @@ class ApneicareBleHelper {
   }
 
   /// Auto scan and pick W628 device (simplified approach)
-  Future<BluetoothDevice?> autoScanAndPickW628(
-      {Duration timeout = const Duration(seconds: 10)}) async {
+  Future<BluetoothDevice?> autoScanAndPickW628({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
     try {
-      await _logEvent('w628_scan_started',
-          'Started scanning specifically for W628 devices');
+      await _logEvent(
+        'w628_scan_started',
+        'Started scanning specifically for W628 devices',
+      );
 
       // First check if device is already connected or bonded
       final existingDevice = await _checkConnectedOrBondedW628();
@@ -355,21 +381,28 @@ class ApneicareBleHelper {
       for (final device in devices) {
         if (device.platformName.toLowerCase().contains('w628')) {
           print('Found W628 device: ${device.platformName}');
-      await _logEvent('w628_device_found', 'W628 device found during scan', {
-            'device_name': device.platformName,
-            'device_id': device.remoteId.toString(),
-            'total_devices_scanned': devices.length,
-          });
+          await _logEvent(
+            'w628_device_found',
+            'W628 device found during scan',
+            {
+              'device_name': device.platformName,
+              'device_id': device.remoteId.toString(),
+              'total_devices_scanned': devices.length,
+            },
+          );
           return device;
         }
       }
 
       print('No W628 device found among ${devices.length} discovered devices');
       await _logEvent(
-          'w628_device_not_found', 'No W628 device found during scan', {
-        'total_devices_scanned': devices.length,
-        'device_names': devices.map((d) => d.platformName).toList(),
-      });
+        'w628_device_not_found',
+        'No W628 device found during scan',
+        {
+          'total_devices_scanned': devices.length,
+          'device_names': devices.map((d) => d.platformName).toList(),
+        },
+      );
       return null;
     } catch (e) {
       print('Error scanning for W628 devices: $e');
@@ -387,7 +420,7 @@ class ApneicareBleHelper {
 
     print('=== Starting connection to ${device.platformName} ===');
 
-      await _logEvent('ble_connection_started', 'Started connecting to device', {
+    await _logEvent('ble_connection_started', 'Started connecting to device', {
       'device_name': device.platformName,
       'device_id': device.remoteId.toString(),
       'connection_start_time': startTime.toIso8601String(),
@@ -401,11 +434,14 @@ class ApneicareBleHelper {
 
     try {
       await _logEvent(
-          'ble_device_connect_attempt', 'Attempting to connect to device', {
-        'device_name': device.platformName,
-        'auto_connect': true,
-        'timeout_seconds': 30,
-      });
+        'ble_device_connect_attempt',
+        'Attempting to connect to device',
+        {
+          'device_name': device.platformName,
+          'auto_connect': true,
+          'timeout_seconds': 30,
+        },
+      );
 
       // Connect to device with autoConnect for Android to maintain persistent connection
       await device.connect(
@@ -416,16 +452,22 @@ class ApneicareBleHelper {
 
       // Wait until the adapter reports 'connected' to avoid race conditions
       try {
-        await _logEvent('ble_waiting_connection_state',
-            'Waiting for connection state confirmation');
+        await _logEvent(
+          'ble_waiting_connection_state',
+          'Waiting for connection state confirmation',
+        );
         await device.connectionState
             .firstWhere((s) => s == BluetoothConnectionState.connected)
             .timeout(Duration(seconds: 5));
-        await _logEvent('ble_connection_state_confirmed',
-            'Connection state confirmed as connected');
+        await _logEvent(
+          'ble_connection_state_confirmed',
+          'Connection state confirmed as connected',
+        );
       } catch (_) {
-        await _logEvent('ble_connection_state_timeout',
-            'Connection state confirmation timed out');
+        await _logEvent(
+          'ble_connection_state_timeout',
+          'Connection state confirmation timed out',
+        );
       }
 
       // Proactively set connected flags before discovery
@@ -470,7 +512,9 @@ class ApneicareBleHelper {
 
       // Discover services
       await _logEvent(
-          'ble_service_discovery_started', 'Started discovering services');
+        'ble_service_discovery_started',
+        'Started discovering services',
+      );
 
       List<BluetoothService> services = await device.discoverServices();
 
@@ -480,10 +524,13 @@ class ApneicareBleHelper {
       }
 
       await _logEvent(
-          'ble_services_discovered', 'Services discovered successfully', {
-        'services_count': services.length,
-        'service_uuids': services.map((s) => s.uuid.toString()).toList(),
-      });
+        'ble_services_discovered',
+        'Services discovered successfully',
+        {
+          'services_count': services.length,
+          'service_uuids': services.map((s) => s.uuid.toString()).toList(),
+        },
+      );
 
       // Find APNEICARE service - try multiple approaches
       BluetoothService? targetService;
@@ -556,63 +603,82 @@ class ApneicareBleHelper {
 
       if (targetService != null) {
         print('Found target service: ${targetService.uuid}');
-      await _logEvent('ble_target_service_found', 'Target service found', {
+        await _logEvent('ble_target_service_found', 'Target service found', {
           'service_uuid': targetService.uuid.toString(),
           'connection_method': connectionMethod,
         });
 
         // Try W628-specific handling first
-        await _logEvent('ble_w628_handling_started',
-            'Starting W628-specific characteristic handling');
+        await _logEvent(
+          'ble_w628_handling_started',
+          'Starting W628-specific characteristic handling',
+        );
         bool w628Handled = await _handleW628Device(targetService);
 
         if (w628Handled) {
           print('Successfully handled W628 device characteristics');
           connectionMethod = 'w628_specific_handling';
           await _logEvent(
-              'ble_w628_handling_success', 'W628-specific handling successful');
+            'ble_w628_handling_success',
+            'W628-specific handling successful',
+          );
 
           // Log found characteristics
           if (_writeCharacteristic != null) {
             writeCharUuidFound = _writeCharacteristic!.uuid.toString();
           }
-          notifyCharUuidsFound =
-              _notifyCharacteristics.map((c) => c.uuid.toString()).toList();
+          notifyCharUuidsFound = _notifyCharacteristics
+              .map((c) => c.uuid.toString())
+              .toList();
         } else {
           print(
-              'W628-specific handling failed, trying enhanced fallback methods');
-          await _logEvent('ble_w628_handling_failed',
-              'W628-specific handling failed, trying fallback');
+            'W628-specific handling failed, trying enhanced fallback methods',
+          );
+          await _logEvent(
+            'ble_w628_handling_failed',
+            'W628-specific handling failed, trying fallback',
+          );
 
           // Enhanced characteristic finding with multiple approaches
           await _findCharacteristicsEnhanced(targetService);
           connectionMethod = 'enhanced_characteristic_fallback';
-          await _logEvent('ble_fallback_handling_completed',
-              'Enhanced fallback handling completed');
+          await _logEvent(
+            'ble_fallback_handling_completed',
+            'Enhanced fallback handling completed',
+          );
 
           // Log found characteristics
           if (_writeCharacteristic != null) {
             writeCharUuidFound = _writeCharacteristic!.uuid.toString();
           }
-          notifyCharUuidsFound =
-              _notifyCharacteristics.map((c) => c.uuid.toString()).toList();
+          notifyCharUuidsFound = _notifyCharacteristics
+              .map((c) => c.uuid.toString())
+              .toList();
         }
       } else {
         final error = 'APNEICARE service not found';
         print('Error: $error');
-      await _logError('ble_service_not_found', 'APNEICARE service not found', {
-          'services_discovered': services.length,
-          'service_uuids': services.map((s) => s.uuid.toString()).toList(),
-        });
+        await _logError(
+          'ble_service_not_found',
+          'APNEICARE service not found',
+          {
+            'services_discovered': services.length,
+            'service_uuids': services.map((s) => s.uuid.toString()).toList(),
+          },
+        );
         throw Exception(error);
       }
 
       // Subscribe to notifications
       await _logEvent(
-          'ble_notification_setup_started', 'Starting notification setup');
+        'ble_notification_setup_started',
+        'Starting notification setup',
+      );
       await _setupNotifications();
       await _logEvent(
-          'ble_notification_setup_completed', 'Notification setup completed');
+        'ble_notification_setup_completed',
+        'Notification setup completed',
+      );
 
       _connectedDevice = device;
       _isConnected = true;
@@ -625,33 +691,40 @@ class ApneicareBleHelper {
       print('Write characteristic found: $writeCharUuidFound');
       print('Notify characteristics found: $notifyCharUuidsFound');
 
-      await _logEvent('ble_connection_successful',
-          'BLE connection completed successfully', {
-        'connection_method': connectionMethod,
-        'service_uuid_found': serviceUuidFound,
-        'write_char_uuid_found': writeCharUuidFound,
-        'notify_char_uuids_found': notifyCharUuidsFound,
-        'connection_duration_ms': connectionDuration.inMilliseconds,
-        'device_name': device.platformName,
-        'device_id': device.remoteId.toString(),
-      });
+      await _logEvent(
+        'ble_connection_successful',
+        'BLE connection completed successfully',
+        {
+          'connection_method': connectionMethod,
+          'service_uuid_found': serviceUuidFound,
+          'write_char_uuid_found': writeCharUuidFound,
+          'notify_char_uuids_found': notifyCharUuidsFound,
+          'connection_duration_ms': connectionDuration.inMilliseconds,
+          'device_name': device.platformName,
+          'device_id': device.remoteId.toString(),
+        },
+      );
 
       // Send synchronize commands to stabilize connection
       try {
         print('Sending synchronize commands to stabilize connection...');
         await _logEvent(
-            'ble_sync_commands_started', 'Starting synchronize commands');
+          'ble_sync_commands_started',
+          'Starting synchronize commands',
+        );
         await _sendSynchronizeTimeCommand();
         print('Synchronize commands sent successfully');
-        await _logEvent('ble_sync_commands_success',
-            'Synchronize commands sent successfully');
+        await _logEvent(
+          'ble_sync_commands_success',
+          'Synchronize commands sent successfully',
+        );
       } catch (e) {
         print('Failed to send synchronize commands: $e');
         await _logError(
-            'ble_sync_commands_failed', 'Failed to send synchronize commands', {
-          'error': e.toString(),
-          'error_type': e.runtimeType.toString(),
-        });
+          'ble_sync_commands_failed',
+          'Failed to send synchronize commands',
+          {'error': e.toString(), 'error_type': e.runtimeType.toString()},
+        );
         // Don't fail the connection if time sync fails
       }
 
@@ -659,8 +732,10 @@ class ApneicareBleHelper {
       _connectionFullyEstablished = true;
       await _stopConnectionStateMonitoring();
 
-      await _logEvent('ble_connection_fully_established',
-          'Connection fully established, monitoring optimized');
+      await _logEvent(
+        'ble_connection_fully_established',
+        'Connection fully established, monitoring optimized',
+      );
 
       return true;
     } catch (e) {
@@ -691,10 +766,14 @@ class ApneicareBleHelper {
     print('Service UUID: ${service.uuid}');
     print('Characteristics found: ${service.characteristics.length}');
 
-      await _logEvent('ble_w628_handling_details', 'W628 device handling started', {
-      'service_uuid': service.uuid.toString(),
-      'characteristics_count': service.characteristics.length,
-    });
+    await _logEvent(
+      'ble_w628_handling_details',
+      'W628 device handling started',
+      {
+        'service_uuid': service.uuid.toString(),
+        'characteristics_count': service.characteristics.length,
+      },
+    );
 
     String writeCharMethod = 'not_found';
     String notifyCharMethod = 'not_found';
@@ -782,13 +861,16 @@ class ApneicareBleHelper {
         _writeCharacteristic != null && _notifyCharacteristics.isNotEmpty;
 
     await _logEvent(
-        'ble_w628_handling_completed', 'W628 device handling completed', {
-      'write_characteristic_found': _writeCharacteristic != null,
-      'notify_characteristics_count': _notifyCharacteristics.length,
-      'write_method': writeCharMethod,
-      'notify_method': notifyCharMethod,
-      'success': success,
-    });
+      'ble_w628_handling_completed',
+      'W628 device handling completed',
+      {
+        'write_characteristic_found': _writeCharacteristic != null,
+        'notify_characteristics_count': _notifyCharacteristics.length,
+        'write_method': writeCharMethod,
+        'notify_method': notifyCharMethod,
+        'success': success,
+      },
+    );
 
     return success;
   }
@@ -803,10 +885,12 @@ class ApneicareBleHelper {
         (c) => _compareUuids(c.uuid.toString(), WRITE_CHARACTERISTIC_UUID),
       );
       print(
-          'Found write characteristic by exact UUID: ${_writeCharacteristic!.uuid}');
+        'Found write characteristic by exact UUID: ${_writeCharacteristic!.uuid}',
+      );
     } catch (e) {
       print(
-          'Write characteristic not found by exact UUID, trying by properties');
+        'Write characteristic not found by exact UUID, trying by properties',
+      );
       _writeCharacteristic = null;
     }
 
@@ -905,14 +989,19 @@ class ApneicareBleHelper {
     //     'Notifications already enabled, skipping setup');
 
     print(
-        'Setting up notifications for ${_notifyCharacteristics.length} characteristics');
+      'Setting up notifications for ${_notifyCharacteristics.length} characteristics',
+    );
 
     await _logEvent(
-        'ble_notification_setup_details', 'Setting up notifications', {
-      'characteristics_count': _notifyCharacteristics.length,
-      'characteristic_uuids':
-          _notifyCharacteristics.map((c) => c.uuid.toString()).toList(),
-    });
+      'ble_notification_setup_details',
+      'Setting up notifications',
+      {
+        'characteristics_count': _notifyCharacteristics.length,
+        'characteristic_uuids': _notifyCharacteristics
+            .map((c) => c.uuid.toString())
+            .toList(),
+      },
+    );
 
     // Cancel any existing notification subscriptions to prevent duplicates
     for (final sub in _notifySubscriptions) {
@@ -933,17 +1022,21 @@ class ApneicareBleHelper {
         });
         _notifySubscriptions.add(sub);
         print('Successfully set up notifications for: ${characteristic.uuid}');
-        await _logEvent('ble_notification_characteristic_success',
-            'Successfully set up notifications for characteristic', {
-          'characteristic_uuid': characteristic.uuid.toString(),
-        });
+        await _logEvent(
+          'ble_notification_characteristic_success',
+          'Successfully set up notifications for characteristic',
+          {'characteristic_uuid': characteristic.uuid.toString()},
+        );
       } catch (e) {
         print('Failed to set up notifications for ${characteristic.uuid}: $e');
-        await _logError('ble_notification_characteristic_failed',
-            'Failed to set up notifications for characteristic', {
-          'characteristic_uuid': characteristic.uuid.toString(),
-          'error': e.toString(),
-        });
+        await _logError(
+          'ble_notification_characteristic_failed',
+          'Failed to set up notifications for characteristic',
+          {
+            'characteristic_uuid': characteristic.uuid.toString(),
+            'error': e.toString(),
+          },
+        );
         // Continue with other characteristics even if one fails
       }
     }
@@ -955,7 +1048,8 @@ class ApneicareBleHelper {
   /// Handle received data from notifications
   void _handleReceivedData(List<int> data) {
     print(
-        'Received data: ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      'Received data: ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    );
 
     // Add to data controller for other listeners
     _dataController?.add(data);
@@ -976,12 +1070,14 @@ class ApneicareBleHelper {
         // This validation ensures protocol compliance
         if (state != cmd) {
           print(
-              '⚠️ STATE mismatch: CMD=0x${cmd.toRadixString(16).padLeft(2, '0')}, STATE=0x${state.toRadixString(16).padLeft(2, '0')}');
+            '⚠️ STATE mismatch: CMD=0x${cmd.toRadixString(16).padLeft(2, '0')}, STATE=0x${state.toRadixString(16).padLeft(2, '0')}',
+          );
           _logError('state_validation_failed', 'STATE field mismatch', {
             'cmd': cmd,
             'state': state,
-            'hex_data':
-                data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
+            'hex_data': data
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(' '),
           });
         }
       }
@@ -998,17 +1094,21 @@ class ApneicareBleHelper {
             cmd == ApneicareCommands.CMD_QUERY) {
           if (packetAddress != 0x0000) {
             print(
-                '⚠️ Packet address: Expected 0x0000, got 0x${packetAddress.toRadixString(16).padLeft(4, '0')}');
-            _logError('packet_address_validation_failed',
-                'Unexpected packet address', {
-              'cmd': cmd,
-              'cmd_hex': '0x${cmd.toRadixString(16).padLeft(2, '0')}',
-              'expected': 0x0000,
-              'received': packetAddress,
-              'hex_data': data
-                  .map((b) => b.toRadixString(16).padLeft(2, '0'))
-                  .join(' '),
-            });
+              '⚠️ Packet address: Expected 0x0000, got 0x${packetAddress.toRadixString(16).padLeft(4, '0')}',
+            );
+            _logError(
+              'packet_address_validation_failed',
+              'Unexpected packet address',
+              {
+                'cmd': cmd,
+                'cmd_hex': '0x${cmd.toRadixString(16).padLeft(2, '0')}',
+                'expected': 0x0000,
+                'received': packetAddress,
+                'hex_data': data
+                    .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                    .join(' '),
+              },
+            );
           }
         }
       }
@@ -1027,7 +1127,8 @@ class ApneicareBleHelper {
       // First send synchronize command to establish communication
       List<int> syncCommand = ApneicareCommands.synchronize();
       print(
-          'Sending synchronize command: ${syncCommand.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        'Sending synchronize command: ${syncCommand.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+      );
 
       await _writeCharacteristic!.write(syncCommand, withoutResponse: true);
       print('Synchronize command sent successfully');
@@ -1038,7 +1139,8 @@ class ApneicareBleHelper {
       // Then send time upload command to sync time
       List<int> timeUploadCommand = ApneicareCommands.timeUpload();
       print(
-          'Sending time upload command: ${timeUploadCommand.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        'Sending time upload command: ${timeUploadCommand.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+      );
 
       await _writeCharacteristic!.write(
         timeUploadCommand,
@@ -1058,28 +1160,37 @@ class ApneicareBleHelper {
   Future<bool> sendCommand(List<int> command, String commandName) async {
     print('Sending command: $commandName');
     print(
-        'Command data: ${command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      'Command data: ${command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    );
 
     try {
       if (!_isConnected) {
         print('ERROR: Not connected to device');
-        await _logError('ble_command_failed',
-            'Cannot send command: not connected to device', {
-          'command_name': commandName,
-          'command_hex':
-              command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
-        });
+        await _logError(
+          'ble_command_failed',
+          'Cannot send command: not connected to device',
+          {
+            'command_name': commandName,
+            'command_hex': command
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(' '),
+          },
+        );
         throw Exception('Not connected to device');
       }
 
       if (_writeCharacteristic == null) {
         print('ERROR: Write characteristic not available');
-        await _logError('ble_command_failed',
-            'Cannot send command: write characteristic not available', {
-          'command_name': commandName,
-          'command_hex':
-              command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
-        });
+        await _logError(
+          'ble_command_failed',
+          'Cannot send command: write characteristic not available',
+          {
+            'command_name': commandName,
+            'command_hex': command
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(' '),
+          },
+        );
         throw Exception('Write characteristic not available');
       }
 
@@ -1089,23 +1200,26 @@ class ApneicareBleHelper {
       // and "primary service not found" errors before they hit the write call.
       if (_connectedDevice != null) {
         try {
-          final nativeState = await _connectedDevice!.connectionState
-              .first
+          final nativeState = await _connectedDevice!.connectionState.first
               .timeout(const Duration(seconds: 2));
           if (nativeState != BluetoothConnectionState.connected) {
             print(
-                'ERROR: Native BLE state is $nativeState — invalidating cached state');
+              'ERROR: Native BLE state is $nativeState — invalidating cached state',
+            );
             _isConnected = false;
             _writeCharacteristic = null;
             _notifyCharacteristics.clear();
-            await _logError('ble_command_failed',
-                'Cannot send command: native state is not connected', {
-              'command_name': commandName,
-              'command_hex': command
-                  .map((b) => b.toRadixString(16).padLeft(2, '0'))
-                  .join(' '),
-              'native_state': nativeState.toString(),
-            });
+            await _logError(
+              'ble_command_failed',
+              'Cannot send command: native state is not connected',
+              {
+                'command_name': commandName,
+                'command_hex': command
+                    .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                    .join(' '),
+                'native_state': nativeState.toString(),
+              },
+            );
             return false;
           }
         } catch (_) {
@@ -1123,8 +1237,9 @@ class ApneicareBleHelper {
 
       await _logEvent('ble_command_sent', 'Command sent successfully', {
         'command_name': commandName,
-        'command_hex':
-            command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
+        'command_hex': command
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join(' '),
         'command_length': command.length,
         'characteristic_uuid': _writeCharacteristic!.uuid.toString(),
       });
@@ -1136,7 +1251,8 @@ class ApneicareBleHelper {
       // On iOS, a stale GATT session produces "primary service not found" or
       // fbp-code 6 ("device is not connected"). In both cases the cached
       // characteristic is invalid — clear it so the next attempt doesn't reuse it.
-      final isStaleGatt = errorStr.contains('primary service not found') ||
+      final isStaleGatt =
+          errorStr.contains('primary service not found') ||
           errorStr.contains('device is not connected') ||
           errorStr.contains('fbp-code: 6');
       if (isStaleGatt) {
@@ -1148,8 +1264,9 @@ class ApneicareBleHelper {
 
       await _logError('ble_command_failed', 'Failed to send command', {
         'command_name': commandName,
-        'command_hex':
-            command.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
+        'command_hex': command
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join(' '),
         'error': errorStr,
         'error_type': e.runtimeType.toString(),
         'is_connected': _isConnected,
@@ -1163,33 +1280,41 @@ class ApneicareBleHelper {
   /// Start real-time monitoring
   Future<bool> startRealTime() async {
     if (_writeCharacteristic == null) {
-      await _logError('ble_realtime_start_failed',
-          'Cannot start real-time: write characteristic not available');
+      await _logError(
+        'ble_realtime_start_failed',
+        'Cannot start real-time: write characteristic not available',
+      );
       return false;
     }
 
     try {
-      await _logEvent('ble_realtime_start_attempt',
-          'Attempting to start real-time monitoring');
+      await _logEvent(
+        'ble_realtime_start_attempt',
+        'Attempting to start real-time monitoring',
+      );
       final cmd = ApneicareCommands.realTimeStart();
       final success = await sendCommand(cmd, 'Start Real Time');
 
       if (success) {
-        await _logEvent('ble_realtime_start_success',
-            'Real-time monitoring started successfully');
+        await _logEvent(
+          'ble_realtime_start_success',
+          'Real-time monitoring started successfully',
+        );
       } else {
-        await _logError('ble_realtime_start_failed',
-            'Failed to start real-time monitoring: command failed');
+        await _logError(
+          'ble_realtime_start_failed',
+          'Failed to start real-time monitoring: command failed',
+        );
       }
 
       return success;
     } catch (e) {
       print('Failed to start real time: $e');
       await _logError(
-          'ble_realtime_start_error', 'Error starting real-time monitoring', {
-        'error': e.toString(),
-        'error_type': e.runtimeType.toString(),
-      });
+        'ble_realtime_start_error',
+        'Error starting real-time monitoring',
+        {'error': e.toString(), 'error_type': e.runtimeType.toString()},
+      );
       return false;
     }
   }
@@ -1202,36 +1327,46 @@ class ApneicareBleHelper {
     // If we have a write characteristic but other flags are stale, still attempt
     // the write; sendCommand's native-state check will catch a truly dead link.
     if (!_isConnected && _writeCharacteristic == null) {
-      await _logError('ble_realtime_stop_failed',
-          'Cannot stop real-time: device disconnected', {
-        'is_connected': _isConnected,
-        'has_write_characteristic': _writeCharacteristic != null,
-        'has_notify_characteristics': _notifyCharacteristics.isNotEmpty,
-        'notifications_enabled': _notificationsEnabled,
-      });
+      await _logError(
+        'ble_realtime_stop_failed',
+        'Cannot stop real-time: device disconnected',
+        {
+          'is_connected': _isConnected,
+          'has_write_characteristic': _writeCharacteristic != null,
+          'has_notify_characteristics': _notifyCharacteristics.isNotEmpty,
+          'notifications_enabled': _notificationsEnabled,
+        },
+      );
       return true;
     }
 
     try {
-      await _logEvent('ble_realtime_stop_attempt',
-          'Attempting to stop real-time monitoring');
+      await _logEvent(
+        'ble_realtime_stop_attempt',
+        'Attempting to stop real-time monitoring',
+      );
 
       final cmd = ApneicareCommands.realTimeStop();
       print(
-          'Stop real-time command: ${cmd.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        'Stop real-time command: ${cmd.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+      );
 
       final success = await sendCommand(cmd, 'Stop Real Time');
 
       if (success) {
-        await _logEvent('ble_realtime_stop_success',
-            'Real-time monitoring stopped successfully');
+        await _logEvent(
+          'ble_realtime_stop_success',
+          'Real-time monitoring stopped successfully',
+        );
         print('Stop real-time command sent successfully');
 
         // Wait a bit for the command to be processed
         await Future.delayed(Duration(milliseconds: 500));
       } else {
-        await _logError('ble_realtime_stop_failed',
-            'Failed to stop real-time monitoring: command failed');
+        await _logError(
+          'ble_realtime_stop_failed',
+          'Failed to stop real-time monitoring: command failed',
+        );
         print('Stop real-time command failed to send');
       }
 
@@ -1239,52 +1374,64 @@ class ApneicareBleHelper {
     } catch (e) {
       print('Failed to stop real time: $e');
       await _logError(
-          'ble_realtime_stop_error', 'Error stopping real-time monitoring', {
-        'error': e.toString(),
-        'error_type': e.runtimeType.toString(),
-      });
+        'ble_realtime_stop_error',
+        'Error stopping real-time monitoring',
+        {'error': e.toString(), 'error_type': e.runtimeType.toString()},
+      );
       return false;
     }
   }
 
   /// Listen for a pushed battery packet: 55 AA 60 <level> <sum>
   /// per MD300W628 protocol (push-only; no host request).
-  Future<int?> readBattery(
-      {Duration timeout = const Duration(seconds: 10)}) async {
+  Future<int?> readBattery({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
     // Must have data notifications enabled on UUID ...9601 per spec.
     if (_dataController == null) {
-      await _logError('ble_battery_read_failed',
-          'Cannot read battery: notify stream not available');
+      await _logError(
+        'ble_battery_read_failed',
+        'Cannot read battery: notify stream not available',
+      );
       return null;
     }
 
     try {
       await _logEvent(
-          'ble_battery_read_started', 'Started reading battery level');
+        'ble_battery_read_started',
+        'Started reading battery level',
+      );
 
       // Wait for the next valid battery frame from the notify stream.
       // Your helper should be piping each BLE notification as List<int> into _dataController.
-      final List<int> pkt = await _dataController!.stream.firstWhere((data) {
-        if (data.length < 5) return false;
-        if (data[0] != 0x55 || data[1] != 0xAA) return false;
-        if (data[2] != 0x60) return false; // Battery upload CMD
-        final level = data[3];
-        final sum = data[4];
-        final expect = (0x60 + level) & 0xFF;
-        // Level must be 0..100 and checksum must match
-        return level >= 0 && level <= 100 && sum == expect;
-      }).timeout(timeout);
+      final List<int> pkt = await _dataController!.stream
+          .firstWhere((data) {
+            if (data.length < 5) return false;
+            if (data[0] != 0x55 || data[1] != 0xAA) return false;
+            if (data[2] != 0x60) return false; // Battery upload CMD
+            final level = data[3];
+            final sum = data[4];
+            final expect = (0x60 + level) & 0xFF;
+            // Level must be 0..100 and checksum must match
+            return level >= 0 && level <= 100 && sum == expect;
+          })
+          .timeout(timeout);
 
       final level = pkt[3];
       await _logEvent(
-          'ble_battery_read_success', 'Battery level read successfully', {
-        'battery_level': level,
-        'raw': pkt.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')
-      });
+        'ble_battery_read_success',
+        'Battery level read successfully',
+        {
+          'battery_level': level,
+          'raw': pkt.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' '),
+        },
+      );
       return level;
     } on TimeoutException {
-      await _logError('ble_battery_read_timeout',
-          'Battery read timed out - no pushed 0x60 packet observed');
+      await _logError(
+        'ble_battery_read_timeout',
+        'Battery read timed out - no pushed 0x60 packet observed',
+      );
       return null;
     } catch (e) {
       await _logError('ble_battery_read_error', 'Error reading battery level', {
@@ -1330,11 +1477,14 @@ class ApneicareBleHelper {
     print('Disconnecting from device...');
 
     await _logEvent(
-        'ble_disconnect_started', 'Started disconnecting from device', {
-      'device_name': _connectedDevice?.platformName,
-      'device_id': _connectedDevice?.remoteId.toString(),
-      'was_connected': _isConnected,
-    });
+      'ble_disconnect_started',
+      'Started disconnecting from device',
+      {
+        'device_name': _connectedDevice?.platformName,
+        'device_id': _connectedDevice?.remoteId.toString(),
+        'was_connected': _isConnected,
+      },
+    );
 
     try {
       if (_connectedDevice != null) {
@@ -1369,10 +1519,10 @@ class ApneicareBleHelper {
 
         print('Device disconnected successfully');
         await _logEvent(
-            'ble_disconnect_success', 'Device disconnected successfully', {
-          'device_name': deviceName,
-          'device_id': deviceId,
-        });
+          'ble_disconnect_success',
+          'Device disconnected successfully',
+          {'device_name': deviceName, 'device_id': deviceId},
+        );
       }
     } catch (e) {
       print('Error during disconnect: $e');
@@ -1381,11 +1531,15 @@ class ApneicareBleHelper {
         'error_type': e.runtimeType.toString(),
       });
     } finally {
-      await _logEvent('ble_disconnect_cleanup', 'Disconnect cleanup completed', {
-        'was_connected': _isConnected,
-        'had_write_characteristic': _writeCharacteristic != null,
-        'notify_characteristics_count': _notifyCharacteristics.length,
-      });
+      await _logEvent(
+        'ble_disconnect_cleanup',
+        'Disconnect cleanup completed',
+        {
+          'was_connected': _isConnected,
+          'had_write_characteristic': _writeCharacteristic != null,
+          'notify_characteristics_count': _notifyCharacteristics.length,
+        },
+      );
 
       _connectedDevice = null;
       _writeCharacteristic = null;
@@ -1409,11 +1563,14 @@ class ApneicareBleHelper {
   Future<void> _stopConnectionStateMonitoring() async {
     if (_connectionStateSubscription != null) {
       print(
-          'Stopping connection state monitoring to optimize device performance');
+        'Stopping connection state monitoring to optimize device performance',
+      );
       await _connectionStateSubscription!.cancel();
       _connectionStateSubscription = null;
-      await _logEvent('ble_monitoring_stopped',
-          'Connection state monitoring stopped for optimization');
+      await _logEvent(
+        'ble_monitoring_stopped',
+        'Connection state monitoring stopped for optimization',
+      );
     }
   }
 

@@ -5,19 +5,26 @@ BLE session API for **Apneicare / Hushd Sense W628** overnight SpO₂ recording
 
 Host app (FlutterFlow) owns UI, Resdent upload, and foreground service.
 
-## Install (GitHub — same as snore_detection)
+## Install
+
+### pub.dev
+
+```yaml
+dependencies:
+  apneicare_ble: ^0.1.0
+```
+
+### GitHub (FlutterFlow Custom Package)
 
 ```yaml
 dependencies:
   apneicare_ble:
     git:
       url: https://github.com/VirtuousTechlogicMobile/apneicare_ble.git
-      # ref: v0.1.0   # optional tag
+      ref: v0.1.0
 ```
 
-FlutterFlow: **Settings → Dependencies → Custom Package** → add the git URL above.
-
-Local path (development):
+### Local path (development)
 
 ```yaml
 dependencies:
@@ -67,4 +74,4 @@ See [INSTALL_GUIDE.md](INSTALL_GUIDE.md) for Android / iOS permission strings
 
 ## License
 
-Proprietary — VirtuousTechlogic / Good Sleep Co. Not published to pub.dev.
+MIT — see [LICENSE](LICENSE).
