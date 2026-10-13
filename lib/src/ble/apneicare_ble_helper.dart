@@ -15,26 +15,26 @@ class ApneicareBleHelper {
   static ApneicareBleHelper get instance => _instance;
 
   void Function(
-    String level,
-    String code,
-    String message, [
-    Map<String, dynamic>? data,
-  ])?
+      String level,
+      String code,
+      String message, [
+      Map<String, dynamic>? data,
+      ])?
   onLog;
 
   Future<void> _logEvent(
-    String code,
-    String message, [
-    Map<String, dynamic>? data,
-  ]) async {
+      String code,
+      String message, [
+        Map<String, dynamic>? data,
+      ]) async {
     onLog?.call('event', code, message, data);
   }
 
   Future<void> _logError(
-    String code,
-    String message, [
-    Map<String, dynamic>? data,
-  ]) async {
+      String code,
+      String message, [
+        Map<String, dynamic>? data,
+      ]) async {
     onLog?.call('error', code, message, data);
   }
 
@@ -137,10 +137,10 @@ class ApneicareBleHelper {
   // StreamController<bool>? _disconnectionController;
 
   // Connection tracking
-  DateTime? _lastConnectionTime;
+  // DateTime? _lastConnectionTime;
 
   // Command tracking
-  int _commandCounter = 0;
+  // int _commandCounter = 0;
 
   // Getters
   BluetoothDevice? get connectedDevice => _connectedDevice;
@@ -253,8 +253,8 @@ class ApneicareBleHelper {
     _isConnected = false;
     _notificationsEnabled = false;
     _connectionFullyEstablished = false;
-    _lastConnectionTime = null;
-    _commandCounter = 0;
+    // _lastConnectionTime = null;
+    // _commandCounter = 0;
 
     print('BLE helper state reset');
   }
@@ -359,14 +359,19 @@ class ApneicareBleHelper {
     return null;
   }
 
-  /// Auto scan and pick W628 device (simplified approach)
+  /// Auto scan and pick W628 device.
+  ///
+  /// Stops scanning as soon as a W628 advertisement is seen (does not wait
+  /// out the full [timeout] when the device is nearby).
   Future<BluetoothDevice?> autoScanAndPickW628({
     Duration timeout = const Duration(seconds: 10),
   }) async {
+    StreamSubscription<List<ScanResult>>? scanSub;
     try {
       await _logEvent(
         'w628_scan_started',
         'Started scanning specifically for W628 devices',
+        {'timeout_seconds': timeout.inSeconds, 'early_exit': true},
       );
 
       // First check if device is already connected or bonded
@@ -375,36 +380,60 @@ class ApneicareBleHelper {
         return existingDevice;
       }
 
-      final devices = await scanForDevices(timeout: timeout);
+      BluetoothDevice? found;
+      final seenNames = <String>{};
 
-      // Filter for W628 devices
-      for (final device in devices) {
-        if (device.platformName.toLowerCase().contains('w628')) {
-          print('Found W628 device: ${device.platformName}');
-          await _logEvent(
-            'w628_device_found',
-            'W628 device found during scan',
-            {
-              'device_name': device.platformName,
-              'device_id': device.remoteId.toString(),
-              'total_devices_scanned': devices.length,
-            },
-          );
-          return device;
+      try {
+        await FlutterBluePlus.stopScan();
+      } catch (_) {}
+
+      scanSub = FlutterBluePlus.scanResults.listen((results) {
+        for (final result in results) {
+          final name = result.device.platformName;
+          if (name.isNotEmpty) seenNames.add(name);
+          if (name.toLowerCase().contains('w628')) {
+            found = result.device;
+            // End scan immediately — do not wait for full timeout.
+            unawaited(FlutterBluePlus.stopScan());
+            return;
+          }
         }
+      });
+
+      await FlutterBluePlus.startScan(timeout: timeout);
+      await FlutterBluePlus.isScanning.where((scanning) => !scanning).first;
+      await scanSub.cancel();
+      scanSub = null;
+
+      if (found != null) {
+        print('Found W628 device (early exit): ${found!.platformName}');
+        await _logEvent(
+          'w628_device_found',
+          'W628 device found during scan',
+          {
+            'device_name': found!.platformName,
+            'device_id': found!.remoteId.toString(),
+            'early_exit': true,
+            'devices_seen': seenNames.length,
+          },
+        );
+        return found;
       }
 
-      print('No W628 device found among ${devices.length} discovered devices');
+      print('No W628 device found among ${seenNames.length} discovered devices');
       await _logEvent(
         'w628_device_not_found',
         'No W628 device found during scan',
         {
-          'total_devices_scanned': devices.length,
-          'device_names': devices.map((d) => d.platformName).toList(),
+          'total_devices_scanned': seenNames.length,
+          'device_names': seenNames.toList(),
         },
       );
       return null;
     } catch (e) {
+      try {
+        await scanSub?.cancel();
+      } catch (_) {}
       print('Error scanning for W628 devices: $e');
       await _logError('w628_scan_error', 'Error scanning for W628 devices', {
         'error': e.toString(),
@@ -489,8 +518,8 @@ class ApneicareBleHelper {
       _connectionStateSubscription
           ?.cancel(); // Cancel any existing subscription
       _connectionStateSubscription = device.connectionState.listen((
-        state,
-      ) async {
+          state,
+          ) async {
         print('Connection state changed: $state');
 
         if (state == BluetoothConnectionState.disconnected) {
@@ -505,7 +534,7 @@ class ApneicareBleHelper {
           print('Device connected: ${device.platformName}');
           _isConnected = true;
           _connectedDevice = device;
-          _lastConnectionTime = DateTime.now();
+          // _lastConnectionTime = DateTime.now();
         }
       });
       await Future.delayed(Duration(seconds: 1));
@@ -551,19 +580,19 @@ class ApneicareBleHelper {
         for (BluetoothService service in services) {
           bool hasWriteChar = service.characteristics.any((c) {
             return _compareUuids(
-                  c.uuid.toString(),
-                  WRITE_CHARACTERISTIC_UUID,
-                ) ||
+              c.uuid.toString(),
+              WRITE_CHARACTERISTIC_UUID,
+            ) ||
                 ALTERNATIVE_WRITE_UUIDS.any(
-                  (uuid) => _compareUuids(c.uuid.toString(), uuid),
+                      (uuid) => _compareUuids(c.uuid.toString(), uuid),
                 );
           });
           bool hasNotifyChar = service.characteristics.any((c) {
             return NOTIFY_CHARACTERISTIC_UUIDS.any(
                   (uuid) => _compareUuids(c.uuid.toString(), uuid),
-                ) ||
+            ) ||
                 ALTERNATIVE_NOTIFY_UUIDS.any(
-                  (uuid) => _compareUuids(c.uuid.toString(), uuid),
+                      (uuid) => _compareUuids(c.uuid.toString(), uuid),
                 );
           });
 
@@ -583,10 +612,10 @@ class ApneicareBleHelper {
       if (targetService == null) {
         for (BluetoothService service in services) {
           bool hasWrite = service.characteristics.any(
-            (c) => c.properties.write,
+                (c) => c.properties.write,
           );
           bool hasNotify = service.characteristics.any(
-            (c) => c.properties.notify,
+                (c) => c.properties.notify,
           );
 
           if (hasWrite || hasNotify) {
@@ -682,7 +711,7 @@ class ApneicareBleHelper {
 
       _connectedDevice = device;
       _isConnected = true;
-      _lastConnectionTime = DateTime.now();
+      // _lastConnectionTime = DateTime.now();
 
       final connectionDuration = DateTime.now().difference(startTime);
 
@@ -782,10 +811,10 @@ class ApneicareBleHelper {
     // Find write characteristic (D44BC439-ABFD-45A2-B575-925416129600)
     try {
       _writeCharacteristic = service.characteristics.firstWhere(
-        (c) =>
-            _compareUuids(c.uuid.toString(), WRITE_CHARACTERISTIC_UUID) ||
+            (c) =>
+        _compareUuids(c.uuid.toString(), WRITE_CHARACTERISTIC_UUID) ||
             ALTERNATIVE_WRITE_UUIDS.any(
-              (uuid) => _compareUuids(c.uuid.toString(), uuid),
+                  (uuid) => _compareUuids(c.uuid.toString(), uuid),
             ),
       );
       print('Found write characteristic: ${_writeCharacteristic!.uuid}');
@@ -797,7 +826,7 @@ class ApneicareBleHelper {
       // Try by properties
       try {
         _writeCharacteristic = service.characteristics.firstWhere(
-          (c) => c.properties.write,
+              (c) => c.properties.write,
         );
         print(
           'Found write characteristic by properties: ${_writeCharacteristic!.uuid}',
@@ -813,13 +842,13 @@ class ApneicareBleHelper {
     _notifyCharacteristics = service.characteristics
         .where(
           (c) =>
-              NOTIFY_CHARACTERISTIC_UUIDS.any(
+      NOTIFY_CHARACTERISTIC_UUIDS.any(
+            (uuid) => _compareUuids(c.uuid.toString(), uuid),
+      ) ||
+          ALTERNATIVE_NOTIFY_UUIDS.any(
                 (uuid) => _compareUuids(c.uuid.toString(), uuid),
-              ) ||
-              ALTERNATIVE_NOTIFY_UUIDS.any(
-                (uuid) => _compareUuids(c.uuid.toString(), uuid),
-              ),
-        )
+          ),
+    )
         .toList();
 
     if (_notifyCharacteristics.isNotEmpty) {
@@ -882,7 +911,7 @@ class ApneicareBleHelper {
     // 1. Exact UUID match for write characteristic
     try {
       _writeCharacteristic = service.characteristics.firstWhere(
-        (c) => _compareUuids(c.uuid.toString(), WRITE_CHARACTERISTIC_UUID),
+            (c) => _compareUuids(c.uuid.toString(), WRITE_CHARACTERISTIC_UUID),
       );
       print(
         'Found write characteristic by exact UUID: ${_writeCharacteristic!.uuid}',
@@ -898,7 +927,7 @@ class ApneicareBleHelper {
     if (_writeCharacteristic == null) {
       try {
         _writeCharacteristic = service.characteristics.firstWhere(
-          (c) => c.properties.write,
+              (c) => c.properties.write,
         );
         print(
           'Found write characteristic by properties: ${_writeCharacteristic!.uuid}',
@@ -913,7 +942,7 @@ class ApneicareBleHelper {
     if (_writeCharacteristic == null) {
       try {
         _writeCharacteristic = service.characteristics.firstWhere(
-          (c) => c.properties.write,
+              (c) => c.properties.write,
         );
         print(
           'Found write characteristic by property fallback: ${_writeCharacteristic!.uuid}',
@@ -928,13 +957,13 @@ class ApneicareBleHelper {
     _notifyCharacteristics = service.characteristics
         .where(
           (c) =>
-              NOTIFY_CHARACTERISTIC_UUIDS.any(
+      NOTIFY_CHARACTERISTIC_UUIDS.any(
+            (uuid) => _compareUuids(c.uuid.toString(), uuid),
+      ) ||
+          ALTERNATIVE_NOTIFY_UUIDS.any(
                 (uuid) => _compareUuids(c.uuid.toString(), uuid),
-              ) ||
-              ALTERNATIVE_NOTIFY_UUIDS.any(
-                (uuid) => _compareUuids(c.uuid.toString(), uuid),
-              ),
-        )
+          ),
+    )
         .toList();
 
     if (_notifyCharacteristics.isNotEmpty) {
@@ -1253,8 +1282,8 @@ class ApneicareBleHelper {
       // characteristic is invalid — clear it so the next attempt doesn't reuse it.
       final isStaleGatt =
           errorStr.contains('primary service not found') ||
-          errorStr.contains('device is not connected') ||
-          errorStr.contains('fbp-code: 6');
+              errorStr.contains('device is not connected') ||
+              errorStr.contains('fbp-code: 6');
       if (isStaleGatt) {
         print('Stale GATT detected — invalidating cached characteristics');
         _writeCharacteristic = null;
@@ -1406,15 +1435,15 @@ class ApneicareBleHelper {
       // Your helper should be piping each BLE notification as List<int> into _dataController.
       final List<int> pkt = await _dataController!.stream
           .firstWhere((data) {
-            if (data.length < 5) return false;
-            if (data[0] != 0x55 || data[1] != 0xAA) return false;
-            if (data[2] != 0x60) return false; // Battery upload CMD
-            final level = data[3];
-            final sum = data[4];
-            final expect = (0x60 + level) & 0xFF;
-            // Level must be 0..100 and checksum must match
-            return level >= 0 && level <= 100 && sum == expect;
-          })
+        if (data.length < 5) return false;
+        if (data[0] != 0x55 || data[1] != 0xAA) return false;
+        if (data[2] != 0x60) return false; // Battery upload CMD
+        final level = data[3];
+        final sum = data[4];
+        final expect = (0x60 + level) & 0xFF;
+        // Level must be 0..100 and checksum must match
+        return level >= 0 && level <= 100 && sum == expect;
+      })
           .timeout(timeout);
 
       final level = pkt[3];
