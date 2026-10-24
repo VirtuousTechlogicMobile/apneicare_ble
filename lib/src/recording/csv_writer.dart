@@ -11,6 +11,8 @@ class ApneicareCsvWriter {
   String? get path => _file?.path;
   int get rowCount => _rowCount;
 
+  static const String headerLine = 'value,data_type,probe_status';
+
   Future<String> start({String? fileName}) async {
     final dir = await getApplicationDocumentsDirectory();
     final name = fileName ??
@@ -18,6 +20,10 @@ class ApneicareCsvWriter {
     _file = File('${dir.path}/$name');
     if (!await _file!.exists()) {
       await _file!.create(recursive: true);
+    }
+    // Header on first chunk only — write once when the file is empty.
+    if (await _file!.length() == 0) {
+      await _file!.writeAsString('$headerLine\n');
     }
     _rowCount = 0;
     return _file!.path;
@@ -27,6 +33,9 @@ class ApneicareCsvWriter {
     _file = File(absolutePath);
     if (!await _file!.exists()) {
       await _file!.create(recursive: true);
+    }
+    if (await _file!.length() == 0) {
+      await _file!.writeAsString('$headerLine\n');
     }
     _rowCount = 0;
   }
